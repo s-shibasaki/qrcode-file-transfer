@@ -2241,6 +2241,29 @@ var qrcode = function() {
   };
 
   //---------------------------------------------------------------------
+  // qrcode.getMaxDataBytes
+  //
+  // 指定した型番 / 誤り訂正レベルの QR コードに 8bit byte モードで
+  // 格納できる最大バイト数を返す。
+
+  qrcode.getMaxDataBytes = function(typeNumber, errorCorrectionLevel) {
+
+    var rsBlocks = QRRSBlock.getRSBlocks(typeNumber,
+        QRErrorCorrectionLevel[errorCorrectionLevel]);
+
+    var totalDataCount = 0;
+    for (var i = 0; i < rsBlocks.length; i += 1) {
+      totalDataCount += rsBlocks[i].dataCount;
+    }
+
+    // mode indicator (4bit) + character count indicator
+    var headerBits = 4 +
+        QRUtil.getLengthInBits(QRMode.MODE_8BIT_BYTE, typeNumber);
+
+    return Math.floor((totalDataCount * 8 - headerBits) / 8);
+  };
+
+  //---------------------------------------------------------------------
   // returns qrcode function.
 
   return qrcode;
