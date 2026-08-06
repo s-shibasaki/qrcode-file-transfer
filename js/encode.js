@@ -166,6 +166,7 @@ let isRun = false;
 
 function stopSending() {
     isRun = false;
+    setKeepScreenAwake(false);
     if (timerId !== null) {
         clearTimeout(timerId);
         timerId = null;
@@ -254,6 +255,8 @@ function startSending() {
     }
     isRun = true;
     startButtonEl.value = 'Stop';
+    // 送出中は放置されるので画面を消させない
+    setKeepScreenAwake(true);
     // ファイル情報フレームを何ブロックおきに挟むか (0 なら挟まない)
     const repeatFileInfo = parseInt(repeatFileInfoEl.value);
     let sentCount = 0;

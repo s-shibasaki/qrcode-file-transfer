@@ -112,6 +112,8 @@ navigator.mediaDevices.getUserMedia({
     video.srcObject = stream;
     video.setAttribute('playsinline', true); // required to tell iOS safari we don't want fullscreen
     video.play();
+    // 受信中はタップされないまま長時間読み取り続けるので画面を消させない
+    setKeepScreenAwake(true);
     let fileName = 'file';
     let fileData = null;
     let blockCount = null;
