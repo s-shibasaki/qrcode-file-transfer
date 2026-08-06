@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check js/decode.js)",
+      "Bash(/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc -e 'var s=readFile\\(\"js/decode.js\"\\); try{ new Function\\(s\\); print\\(\"OK\"\\) } catch\\(e\\){ print\\(\"ERR \"+e\\) }')"
+    ]
+  }
+}

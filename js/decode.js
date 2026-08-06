@@ -102,18 +102,61 @@ const progressBarCtx = progressBarCanvas.getContext('2d');
 progressBarCtx.fillStyle = '#ccc';
 progressBarCtx.fillRect(0, 0, progressBarCanvas.width, progressBarCanvas.height);
 const ctx = canvas.getContext('2d', {willReadFrequently: true});
-navigator.mediaDevices.getUserMedia({
-    video: {
-        facingMode: 'environment',
-        width: 1920,
-        height: 1080,
+video.setAttribute('playsinline', true); // required to tell iOS safari we don't want fullscreen
+video.muted = true;
+
+const captureStatusEl = document.querySelector('#capture-status');
+/** @type {MediaStream | null} */
+let currentStream = null;
+
+function stopCapture() {
+    if (currentStream !== null) {
+        for (const track of currentStream.getTracks()) {
+            track.stop();
+        }
+        currentStream = null;
     }
-}).then((stream) => {
-    video.srcObject = stream;
-    video.setAttribute('playsinline', true); // required to tell iOS safari we don't want fullscreen
-    video.play();
-    // 受信中はタップされないまま長時間読み取り続けるので画面を消させない
-    setKeepScreenAwake(true);
+    video.srcObject = null;
+    setKeepScreenAwake(false);
+    captureStatusEl.textContent = 'stopped';
+}
+
+/**
+ * 読み取り元の映像を切り替える。
+ * @param {'camera' | 'screen'} source
+ */
+async function startCapture(source) {
+    stopCapture();
+    try {
+        const stream = source === 'screen'
+            ? await navigator.mediaDevices.getDisplayMedia({video: true, audio: false})
+            : await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: 1920,
+                    height: 1080,
+                }
+            });
+        currentStream = stream;
+        video.srcObject = stream;
+        await video.play();
+        // 共有停止ボタンなどブラウザ側の UI から止められたときに状態を戻す
+        for (const track of stream.getVideoTracks()) {
+            track.addEventListener('ended', () => {
+                if (currentStream === stream) {
+                    stopCapture();
+                }
+            });
+        }
+        captureStatusEl.textContent = source === 'screen' ? 'screen capture' : 'camera';
+        // 受信中はタップされないまま長時間読み取り続けるので画面を消させない
+        setKeepScreenAwake(true);
+    } catch (e) {
+        captureStatusEl.textContent = `failed (${e.name})`;
+    }
+}
+
+{
     let fileName = 'file';
     let fileData = null;
     let blockCount = null;
@@ -213,4 +256,10 @@ navigator.mediaDevices.getUserMedia({
             saveAs(blob, fileName);
         }
     });
-});
+}
+
+document.querySelector('#camera-button').addEventListener('click', () => startCapture('camera'));
+document.querySelector('#screen-button').addEventListener('click', () => startCapture('screen'));
+document.querySelector('#stop-capture-button').addEventListener('click', stopCapture);
+// 画面キャプチャはユーザー操作起因でしか開始できないので、どちらもボタンで開始させる
+captureStatusEl.textContent = 'stopped';
